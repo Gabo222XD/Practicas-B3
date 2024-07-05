@@ -1,0 +1,117 @@
+Codigo De practica 1 parte 1
+/*
+   Fundacion Kinal
+   Centro educativo tecnico laboral Kinal
+   Quinto perito
+   Quinto electronica
+   Codigo Tecnico: EB5AM 
+   Curso: Taller de electronica digital y reparacion de computadoras I
+   Proyecto: 1 parte 1
+   Dev: Estrada
+   Fecha: 20 de junio
+*/
+
+#include <Adafruit_NeoPixel.h>
+
+const int PIN_TRIG = 9;
+const int PIN_ECHO = 10;
+const int PIN_NEOPIXEL = 11;
+const int PINES_SEGMENTO[] = {2, 3, 4, 5, 6, 7, 8};
+
+// Neo
+Adafruit_NeoPixel tira = Adafruit_NeoPixel(6, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+
+int contadorPersonas = 0;
+const int MAX_PERSONAS = 9;
+const int DISTANCIA_MINIMA = 6;
+const int DISTANCIA_MAXIMA = 10;
+
+void setup() {
+  pinMode(PIN_TRIG, OUTPUT);
+  pinMode(PIN_ECHO, INPUT);
+  for (int i = 0; i < 7; i++) {
+    pinMode(PINES_SEGMENTO[i], OUTPUT);
+  }
+
+  // Neo
+  tira.begin();
+  tira.show(); 
+
+  Serial.begin(9600); 
+}
+
+void loop() {
+  int distancia = medirDistancia();
+
+  // distancia
+  if (distancia >= DISTANCIA_MINIMA && distancia <= DISTANCIA_MAXIMA) {
+    if (contadorPersonas < MAX_PERSONAS) {
+      contadorPersonas++;
+      delay(1000); 
+    }
+  }
+  actualizarDisplay(contadorPersonas);
+  actualizarNeopixel(contadorPersonas);
+
+ //G
+  if (contadorPersonas == MAX_PERSONAS) {
+    delay(1000);
+    mostrarSegmentoG();
+  }
+
+  delay(100);
+}
+
+int medirDistancia() {
+  digitalWrite(PIN_TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(PIN_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(PIN_TRIG, LOW);
+
+  long duracion = pulseIn(PIN_ECHO, HIGH);
+  int distancia = duracion * 0.034 / 2;
+
+  return distancia;
+}
+
+void actualizarDisplay(int cuenta) {
+
+  const bool NUMEROS[10][7] = {
+    {1, 1, 1, 1, 1, 1, 0}, // 0
+    {0, 1, 1, 0, 0, 0, 0}, // 1
+    {1, 1, 0, 1, 1, 0, 1}, // 2
+    {1, 1, 1, 1, 0, 0, 1}, // 3
+    {0, 1, 1, 0, 0, 1, 1}, // 4
+    {1, 0, 1, 1, 0, 1, 1}, // 5
+    {1, 0, 1, 1, 1, 1, 1}, // 6
+    {1, 1, 1, 0, 0, 0, 0}, // 7
+    {1, 1, 1, 1, 1, 1, 1}, // 8
+    {1, 1, 1, 1, 0, 1, 1}  // 9
+  };
+
+  for (int i = 0; i < 7; i++) {
+    digitalWrite(PINES_SEGMENTO[i], NUMEROS[cuenta][i]);
+  }
+}
+
+void actualizarNeopixel(int cuenta) {
+  if (cuenta < 5) {
+    tira.setPixelColor(0, tira.Color(0, 255, 0)); // Verde
+  } else if (cuenta >= 5 && cuenta < MAX_PERSONAS) {
+    tira.setPixelColor(0, tira.Color(255, 255, 0)); // Amarillo
+  } else if (cuenta == MAX_PERSONAS) {
+    tira.setPixelColor(0, tira.Color(255, 0, 0)); // Rojo
+    //Solo el G
+    delay(1000);
+    mostrarSegmentoG(); 
+  }
+  tira.show();
+}
+
+void mostrarSegmentoG() {
+  for (int i = 0; i < 7; i++) {
+    digitalWrite(PINES_SEGMENTO[i], LOW);
+  }
+  digitalWrite(PINES_SEGMENTO[6], HIGH);
+}
