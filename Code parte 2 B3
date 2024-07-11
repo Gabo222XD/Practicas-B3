@@ -1,0 +1,111 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Directivas del preprocesador
+#define SENSOR_HALL 2
+#define SENSOR_IR 3
+#define PIN_POT A0
+#define IN1 8
+#define IN2 9
+#define IN3 10
+#define IN4 11
+
+// LCD
+#define DIRECCION_LCD 0x27
+#define FILAS 2
+#define COLUMNAS 16
+LiquidCrystal_I2C lcd(DIRECCION_LCD, COLUMNAS, FILAS);
+
+// Variables
+unsigned int valorADC;
+unsigned long contadorRevoluciones = 0;
+unsigned long ultimaMedicion = 0;
+bool estadoSensorHall = false;
+bool estadoSensorIR = false;
+volatile bool flag = false;
+
+// Secuencia de pasos para el motor paso a paso
+int paso[8][4] = {
+  {1, 0, 0, 0},
+  {1, 1, 0, 0},
+  {0, 1, 0, 0},
+  {0, 1, 1, 0},
+  {0, 0, 1, 0},
+  {0, 0, 1, 1},
+  {0, 0, 0, 1},
+  {1, 0, 0, 1}
+};
+
+// Función para medir el valor del ADC
+unsigned int leerADC(int pin) {
+  return analogRead(pin);
+}
+
+// Interrupción para el sensor de efecto Hall
+void interrupcionHall() {
+  contadorRevoluciones++;
+  flag = true;
+}
+
+void setup() {
+  // Inicializar comunicación serial
+  Serial.begin(9600);
+
+  // Configuración de pines
+  pinMode(SENSOR_HALL, INPUT);
+  pinMode(SENSOR_IR, INPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  // Configuración de la interrupción
+  attachInterrupt(digitalPinToInterrupt(SENSOR_HALL), interrupcionHall, FALLING);
+
+  // Inicialización de la pantalla LCD
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Contador de rev.");
+
+  // Variables de tiempo
+  ultimaMedicion = millis();
+}
+
+void loop() {
+  // Leer estado del sensor de obstáculos
+  estadoSensorIR = digitalRead(SENSOR_IR);
+
+  if (estadoSensorIR == LOW) {
+    // Leer valor del potenciómetro y mapearlo
+    valorADC = leerADC(PIN_POT);
+    int velocidad = map(valorADC, 0, 1023, 1, 3);
+
+    // Controlar el motor paso a paso
+    for (int i = 0; i < 8; i++) {
+      digitalWrite(IN1, paso[i][0]);
+      digitalWrite(IN2, paso[i][1]);
+      digitalWrite(IN3, paso[i][2]);
+      digitalWrite(IN4, paso[i][3]);
+      delay(velocidad);
+    }
+
+    // Medir y mostrar las revoluciones
+    if (millis() - ultimaMedicion >= 1000) {
+      ultimaMedicion = millis();
+      lcd.setCursor(0, 1);
+      lcd.print("No. De Rev: ");
+      lcd.print(contadorRevoluciones);
+      lcd.print("    ");
+      contadorRevoluciones = 0; // Resetear contador cada segundo
+    }
+  } else {
+    // Si el sensor de obstáculos no detecta nada, parar el motor y borrar la pantalla
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+    lcd.setCursor(0, 1);
+    lcd.print("No. De Rev: 0   ");
+  }
+}
