@@ -1,0 +1,61 @@
+#include <Wire.h>                    // Librería para el protocolo I2C
+#include <SparkFun_ADXL345.h>        // Librería para el acelerómetro ADXL345
+#include <SoftwareSerial.h>
+#include <DFRobotDFPlayerMini.h>     // Librería para el DFPlayer Mini
+
+// Inicialización del acelerómetro
+ADXL345 acelerometro_ADXL345 = ADXL345();
+
+// Variables 
+int x, y, z;
+float Mx, My, Mz, MR;
+
+// Pines del LED bar
+const int ledPins[] = {8, 7, 6, 5, 4, 3, 2}; // Pines del LED bar
+const int numLeds = 8; 
+SoftwareSerial DFPlayerSerial(11, 10); // RX, TX
+DFRobotDFPlayerMini DFPlayer;
+
+void setup() {
+  Serial.begin(9600);     
+  DFPlayerSerial.begin(9600); 
+  Serial.println("Iniciando DFPlayer Mini...");
+  
+  Serial.println("DFPlayer Mini iniciado correctamente");
+  DFPlayer.volume(25); // Configura el volumen al 25
+
+  acelerometro_ADXL345.powerOn();             
+  acelerometro_ADXL345.setRangeSetting(8);    // Configura para medir la aceleración con 8g
+
+  for (int i = 0; i < numLeds; i++) {
+    pinMode(ledPins[i], OUTPUT);
+    digitalWrite(ledPins[i], LOW);
+  }
+}
+
+void loop() {
+  // ejes
+  acelerometro_ADXL345.readAccel(&x, &y, &z);
+
+  Serial.print("La magnitud resultante de la aceleración es de: ");
+  Serial.println(MR);
+
+  // Mapea la aceleración total a la escala de Mercalli y enciende los LEDs correspondientes
+  int nivelMercalli = map(MR, 10, 100, 0, numLeds);
+
+  Serial.print("Nivel Mercalli calculado: ");
+  Serial.println(nivelMercalli);
+
+  if (nivelMercalli >= numLeds) { // Fin del mundo
+    DFPlayer.play(1); // Reproduce el primer archivo MP3 del sinay
+        digitalWrite(ledPins[i], HIGH);
+      }
+      delay(100);
+      for (int i = 0; i < numLeds; i++) {
+        digitalWrite(ledPins[i], LOW);
+      }
+      delay(100);
+    }
+  } else {
+    for (int i = 0; i < numLeds; i++) {
+ 
