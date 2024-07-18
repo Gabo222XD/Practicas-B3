@@ -40,7 +40,7 @@ void loop() {
   Serial.print("La magnitud resultante de la aceleración es de: ");
   Serial.println(MR);
 
-  // Mapea la aceleración total a la escala de Mercalli y enciende los LEDs correspondientes
+  // Mapea la aceleración total a la escala de Mercalli y enciende los LEDs correspondient
   int nivelMercalli = map(MR, 10, 100, 0, numLeds);
 
   Serial.print("Nivel Mercalli calculado: ");
